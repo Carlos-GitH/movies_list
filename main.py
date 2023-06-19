@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect, url_for, request
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, FloatField
+from wtforms import StringField, SubmitField, FloatField, IntegerField
 from wtforms.validators import DataRequired
 import requests
 
@@ -53,6 +53,15 @@ class RatingForm(FlaskForm):
     review = StringField('New review', validators=[DataRequired()])
     submit = SubmitField('Done')
 
+class MovieForm(FlaskForm):
+    title       = StringField ('Title',       validators=[DataRequired()])
+    year        = StringField ('Year',        validators=[DataRequired()])
+    description = StringField ('Description', validators=[DataRequired()])
+    rating      = FloatField  ('Rating',      validators=[DataRequired()])
+    ranking     = IntegerField('Ranking',     validators=[DataRequired()])
+    review      = StringField ('Review',      validators=[DataRequired()])
+    img_url     = StringField ('Image URL',   validators=[DataRequired()])
+    submit      = SubmitField('Done')
     
 @app.route("/")
 def home():
@@ -71,6 +80,33 @@ def edit():
             db.session.commit()
         return redirect(url_for('home'))
     return render_template('edit.html', form=form)
+
+@app.route("/add", methods=['GET', 'POST'])
+def add_movie():
+    form = MovieForm()
+    if form.validate_on_submit():
+        new_movie = Movies(
+            title       = form.title.data,
+            year        = form.year.data,
+            description = form.description.data,
+            rating      = form.rating.data,
+            ranking     = form.ranking.data,
+            review      = form.review.data,
+            img_url     = form.img_url.data
+        )
+        with app.app_context():
+            db.session.add(new_movie)
+            db.session.commit()
+        return redirect(url_for('home'))
+    return render_template('add.html', form=form)
+
+@app.route("/delete")
+def delete_movie():
+    movie_id = request.args.get("id")
+    movie = Movies.query.get(movie_id)
+    db.session.delete(movie)
+    db.session.commit()
+    return redirect(url_for("home"))
 
 if __name__ == '__main__':
     app.run(debug=True)
